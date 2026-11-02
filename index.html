@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#312e81">
+  <title>CMM | تکمیل و ساخت کارنامه</title>
+  <link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+  <main class="app-shell">
+    <header class="app-header">
+      <div class="brand-mark" aria-hidden="true">C</div>
+      <div>
+        <p class="eyebrow">آموزشگاه زبان دماوند</p>
+        <h1>تکمیل و ساخت کارنامه</h1>
+        <p class="subhead">ورود نمرات مجاز، تکمیل مشخصات و دریافت کارنامه‌های HTML</p>
+      </div>
+    </header>
+
+    <section class="control-card" aria-label="ورود اطلاعات کلاس">
+      <div class="control-actions">
+        <input id="importFile" type="file" accept=".json,application/json" hidden>
+        <button id="chooseFileButton" class="button primary" type="button">ورود خروجی نمرات / پشتیبان JSON</button>
+        <label class="class-picker">
+          <span>کلاس</span>
+          <select id="classPicker" disabled aria-label="انتخاب کلاس">
+            <option value="">ابتدا فایل JSON را وارد کنید</option>
+          </select>
+        </label>
+        <button id="downloadZipButton" class="button success" type="button" disabled>دریافت ZIP کارنامه‌ها</button>
+      </div>
+      <p id="statusMessage" class="status-message" role="status">برای شروع، فایل خروجی JSON کلاس‌منیجر یا فایل پشتیبان را وارد کنید.</p>
+      <div class="privacy-note">اطلاعات فقط در همین مرورگر پردازش و ذخیره می‌شود؛ این وب‌اپلیکیشن سرور ندارد.</div>
+    </section>
+
+    <section class="summary-row" id="summaryRow" hidden>
+      <div class="summary-chip"><span>کلاس</span><strong id="summaryClass">—</strong></div>
+      <div class="summary-chip"><span>جلسه</span><strong id="summarySession">—</strong></div>
+      <div class="summary-chip"><span>تکمیل‌شده</span><strong id="summaryProgress">۰ از ۰</strong></div>
+    </section>
+
+    <section id="emptyState" class="empty-state">
+      <span class="empty-icon" aria-hidden="true">✦</span>
+      <h2>فایل نمرات کلاس را وارد کنید</h2>
+      <p>نمرات فعالیت کلاسی، میان‌ترم و انضباط از فایل قبلی خوانده می‌شوند. سپس مشخصات زبان‌آموز و سایر نمرات را تکمیل کنید.</p>
+    </section>
+
+    <section id="studentList" class="student-list" aria-live="polite"></section>
+    <p class="footer-note">خروجی ZIP شامل یک فایل HTML مستقل برای هر زبان‌آموز است. نام معلم در کارنامه‌ها درج نمی‌شود.</p>
+  </main>
+
+  <template id="reportStyleTemplate">
+    <style>
+      *{box-sizing:border-box;margin:0;padding:0}
+      body{
+        --page-bg:linear-gradient(135deg,#0f172a,#1e1b4b 55%,#312e81);
+        --card-bg:rgba(30,41,59,.94);--text-color:#f8fafc;--muted-bg:rgba(15,23,42,.65);
+        --row-bg:rgba(15,23,42,.45);--border-color:rgba(255,255,255,.12);--label-color:#c4b5fd;
+        --header-bg:linear-gradient(135deg,#8b5cf6,#3b82f6);--badge-bg:linear-gradient(135deg,#7c3aed,#2563eb);
+        --bar-track:rgba(255,255,255,.12);
+        min-height:100vh;padding:30px 15px;display:flex;justify-content:center;align-items:center;
+        flex-direction:column;gap:16px;font-family:Tahoma,"Segoe UI",Arial,sans-serif;background:var(--page-bg);color:var(--text-color)
+      }
+      body[data-theme="light"]{--page-bg:linear-gradient(135deg,#e0e7ff,#f8fafc 55%,#dbeafe);--card-bg:#fff;--text-color:#172033;--muted-bg:#f1f5f9;--row-bg:#f8fafc;--border-color:#dbe3ee;--label-color:#6d28d9;--header-bg:linear-gradient(135deg,#7c3aed,#2563eb);--badge-bg:linear-gradient(135deg,#7c3aed,#2563eb);--bar-track:#e2e8f0}
+      body[data-theme="ocean"]{--page-bg:linear-gradient(135deg,#082f49,#0f766e 55%,#164e63);--card-bg:#f0fdfa;--text-color:#12323a;--muted-bg:#ccfbf1;--row-bg:#fff;--border-color:#99f6e4;--label-color:#0f766e;--header-bg:linear-gradient(135deg,#0891b2,#0f766e);--badge-bg:linear-gradient(135deg,#0f766e,#0284c7);--bar-track:#d1fae5}
+      body[data-theme="forest"]{--page-bg:linear-gradient(135deg,#052e16,#14532d 55%,#365314);--card-bg:#f0fdf4;--text-color:#163322;--muted-bg:#dcfce7;--row-bg:#fff;--border-color:#bbf7d0;--label-color:#15803d;--header-bg:linear-gradient(135deg,#16a34a,#0f766e);--badge-bg:linear-gradient(135deg,#15803d,#0f766e);--bar-track:#dcfce7}
+      body[data-theme="sunset"]{--page-bg:linear-gradient(135deg,#431407,#9a3412 55%,#7f1d1d);--card-bg:#fffaf5;--text-color:#3f241b;--muted-bg:#ffedd5;--row-bg:#fff;--border-color:#fed7aa;--label-color:#c2410c;--header-bg:linear-gradient(135deg,#f97316,#e11d48);--badge-bg:linear-gradient(135deg,#ea580c,#e11d48);--bar-track:#ffedd5}
+      .page{width:100%;max-width:700px}
+      .theme-picker{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:8px;margin-bottom:14px}
+      .theme-picker-label{font-size:13px;font-weight:bold;margin-left:4px}
+      .theme-button{padding:8px 13px;border:1px solid var(--border-color);border-radius:20px;background:var(--card-bg);color:var(--text-color);font:inherit;font-size:12px;cursor:pointer}
+      .theme-button[aria-pressed="true"]{outline:2px solid var(--label-color);outline-offset:2px}
+      .card{width:100%;padding:26px;display:flex;flex-direction:column;gap:18px;color:var(--text-color);background:var(--card-bg);border:1px solid var(--border-color);border-radius:24px;box-shadow:0 25px 50px rgba(0,0,0,.25)}
+      .header{padding:17px;text-align:center;color:#fff;background:var(--header-bg);border-radius:15px}
+      .header h1{font-size:21px}
+      .report-meta{display:flex;justify-content:center;flex-wrap:wrap;gap:7px;color:var(--label-color);font-size:12px}
+      .report-meta span{padding:6px 10px;border-radius:20px;background:var(--muted-bg)}
+      .student-info{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;padding:14px;background:var(--muted-bg);border:1px solid var(--border-color);border-radius:14px;font-size:13px}
+      .student-info div{padding:6px;overflow-wrap:anywhere}
+      .student-info span{color:var(--label-color);font-weight:bold}
+      .scores-list{display:flex;flex-direction:column;gap:9px}
+      .score-row{display:flex;align-items:center;gap:14px;padding:8px 12px;background:var(--row-bg);border:1px solid var(--border-color);border-radius:12px}
+      .skill-name{width:145px;flex-shrink:0;color:var(--text-color);font-size:13px;font-weight:bold;direction:ltr;text-align:right}
+      .bar-container{position:relative;flex:1;height:25px;overflow:hidden;display:flex;align-items:center;background:var(--bar-track);border-radius:20px}
+      .bar-fill{height:100%;border-radius:20px}
+      .bar-fill.high{background:linear-gradient(90deg,#22c55e,#15803d)}
+      .bar-fill.medium{background:linear-gradient(90deg,#fde047,#eab308)}
+      .bar-fill.low{background:linear-gradient(90deg,#fb7185,#dc2626)}
+      .bar-text{position:absolute;width:100%;text-align:center;font-size:12px;font-weight:bold;direction:ltr;pointer-events:none}
+      .bar-text.high,.bar-text.low{color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.45)}
+      .bar-text.medium{color:#422006}
+      .footer{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;padding-top:14px;border-top:1px dashed var(--border-color)}
+      .total-badge,.status-badge{padding:9px 16px;border-radius:20px;font-size:13px;font-weight:bold}
+      .total-badge{color:#fff;background:var(--badge-bg)}
+      .status-badge.accepted{color:#166534;background:#dcfce7}
+      .status-badge.conditional{color:#854d0e;background:#fef9c3}
+      .status-badge.failed{color:#991b1b;background:#fee2e2}
+      @media(max-width:480px){.card{padding:17px}.header h1{font-size:18px}.score-row{gap:8px}.skill-name{width:115px;font-size:12px}.student-info{font-size:12px}}
+    </style>
+  </template>
+
+  <template id="reportMarkupTemplate">
+    <main class="page">
+      <div class="theme-picker" role="group" aria-label="انتخاب تم">
+        <span class="theme-picker-label">انتخاب تم:</span>
+        <button class="theme-button" type="button" data-theme="violet" aria-pressed="true">بنفش</button>
+        <button class="theme-button" type="button" data-theme="light" aria-pressed="false">روشن</button>
+        <button class="theme-button" type="button" data-theme="ocean" aria-pressed="false">اقیانوسی</button>
+        <button class="theme-button" type="button" data-theme="forest" aria-pressed="false">جنگلی</button>
+        <button class="theme-button" type="button" data-theme="sunset" aria-pressed="false">غروب</button>
+      </div>
+      <div id="report-card-container"></div>
+    </main>
+    <script id="report-data" type="application/json">__REPORT_DATA__</script>
+    <script>
+      (function(){
+        var report = JSON.parse(document.getElementById("report-data").textContent);
+        var fields = [
+          {key:"classActivity",name:"Class Involvement",max:40},
+          {key:"speaking",name:"Speaking",max:20},
+          {key:"reading",name:"Reading",max:20},
+          {key:"homework",name:"Homework",max:20},
+          {key:"midterm",name:"Midterm",max:40},
+          {key:"discipline",name:"Discipline",max:10},
+          {key:"listening",name:"Listening",max:10},
+          {key:"vocabulary",name:"Vocabulary",max:10},
+          {key:"spelling",name:"Spelling",max:10},
+          {key:"grammar",name:"Grammar",max:10},
+          {key:"writing",name:"Writing",max:10}
+        ];
+        function esc(value){
+          return String(value == null ? "" : value).replace(/[&<>"']/g,function(char){
+            return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[char];
+          });
+        }
+        function statusFor(total){
+          if(total>=160)return {text:"قبول",className:"accepted"};
+          if(total>=140)return {text:"قبول مشروط",className:"conditional"};
+          return {text:"مردود",className:"failed"};
+        }
+        var total=0,maxTotal=0;
+        var rows=fields.map(function(field){
+          var score=Number(report.scores[field.key] || 0);
+          var max=field.max;
+          total+=score;maxTotal+=max;
+          var pct=max?Math.max(0,Math.min(100,score/max*100)):0;
+          var level=pct>=80?"high":pct>=50?"medium":"low";
+          return '<div class="score-row"><span class="skill-name">'+esc(field.name)+'</span><div class="bar-container"><div class="bar-fill '+level+'" style="width:'+pct+'%"></div><span class="bar-text '+level+'">'+score+' / '+max+'</span></div></div>';
+        }).join("");
+        var status=statusFor(total);
+        document.getElementById("report-card-container").innerHTML=
+          '<section class="card">'+
+            '<header class="header"><h1>کارنامه ارزیابی عملکرد زبان‌آموز</h1></header>'+
+            '<div class="report-meta"><span>کلاس: '+esc(report.className)+'</span><span>جلسه: '+esc(report.sessionNumber)+'</span><span>تاریخ: '+esc(report.dateJalali)+'</span></div>'+
+            '<div class="student-info">'+
+              '<div><span>نام:</span> '+esc(report.student.name)+'</div>'+
+              '<div><span>نام پدر:</span> '+esc(report.student.father)+'</div>'+
+              '<div><span>کد ملی:</span> '+esc(report.student.nationalId)+'</div>'+
+              '<div><span>وضعیت:</span> '+status.text+'</div>'+
+            '</div>'+
+            '<div class="scores-list">'+rows+'</div>'+
+            '<footer class="footer"><div class="total-badge">مجموع نمرات: '+total+' از '+maxTotal+'</div><div class="status-badge '+status.className+'">'+status.text+'</div></footer>'+
+          '</section>';
+        document.querySelectorAll(".theme-button").forEach(function(button){
+          button.addEventListener("click",function(){
+            document.body.dataset.theme=button.dataset.theme;
+            document.querySelectorAll(".theme-button").forEach(function(item){
+              item.setAttribute("aria-pressed",String(item===button));
+            });
+          });
+        });
+      })();
+    </script>
+  </template>
+
+  <script src="js/app.js"></script>
+</body>
+</html>
